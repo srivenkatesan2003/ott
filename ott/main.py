@@ -1,24 +1,42 @@
-from fastapi import FastAPI
-from pydantic import BaseModel,EmailStr,Field
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy.orm import Session
+from .crud import get_account,get_accounts,create_account
+from .db import SessionLocal, engine
+from . import crud, models, schemas
+
+
+models.Base.metadata.create_all(bind=engine)
+
 
 app=FastAPI()
 
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 
-class Account(BaseModel):
-    first_name: str  = Field(description="Firstname of the user")
-    last_name: str = Field(description="lastname of the user")
-    email: EmailStr = Field(description="Email of the user",examples=['demo@mail.com'])
-
-@app.get("/accounts")
-async def get_accounts(accounts:Account)-> list[Account]:
-    return accounts
+@app.get("/accounts",  response_model=list[schemas.Account])
+async def get_accounts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+      accounts = crud.get_accounts(db, skip=skip, limit=limit)
+      return accounts
 
 
-@app.post("/accounts")
-async def save_account(account:Account):
-    return account
+@app.post("/accounts",  response_model=schemas.Account)
+async def save_account(account: schemas.Account, db: Session = Depends(get_db)):
+    return crud.create_account(db=db, account=account)
+
+
+@app.get("/Select_Movie", response_model=list[schemas.Select_Movie])
+async def get_movies(skip:int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    movies =
+
+
+
+
 
 # SQLALCHEMY_DATABASE_URL = "postgresql://postgres:<password>@localhost:5432/ott"
